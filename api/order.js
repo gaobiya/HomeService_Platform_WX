@@ -45,6 +45,13 @@ export function completeOrder(orderId) {
 }
 
 /**
+ * 拒绝订单
+ */
+export function rejectOrder(orderId, workerId) {
+  return request(`/order/reject?orderId=${orderId}&workerId=${workerId}`, 'PUT')
+}
+
+/**
  * 支付订单
  */
 export function payOrder(orderId, amount) {

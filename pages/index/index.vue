@@ -78,6 +78,16 @@ export default {
 	onShow() {
 		this.loadData()
 	},
+	onPullDownRefresh() {
+		// 下拉刷新
+		if (this.userRole === 'worker') {
+			this.loadWorkerStats().finally(() => {
+				uni.stopPullDownRefresh()
+			})
+		} else {
+			uni.stopPullDownRefresh()
+		}
+	},
 	methods: {
 		checkLogin() {
 			const token = uni.getStorageSync('token')
@@ -102,26 +112,24 @@ export default {
 			}
 		},
 		loadWorkerStats() {
-			getWorkerOrders(this.userId, 'PENDING')
-				.then(res => {
+			const promises = [
+				getWorkerOrders(this.userId, 'PENDING').then(res => {
 					if (res.code === 200) {
 						this.pendingCount = res.data ? res.data.length : 0
 					}
-				})
-			
-			getWorkerOrders(this.userId, 'IN_PROGRESS')
-				.then(res => {
+				}),
+				getWorkerOrders(this.userId, 'IN_PROGRESS').then(res => {
 					if (res.code === 200) {
 						this.inProgressCount = res.data ? res.data.length : 0
 					}
-				})
-			
-			getWorkerOrders(this.userId, 'COMPLETED')
-				.then(res => {
+				}),
+				getWorkerOrders(this.userId, 'COMPLETED').then(res => {
 					if (res.code === 200) {
 						this.completedCount = res.data ? res.data.length : 0
 					}
 				})
+			]
+			return Promise.all(promises)
 		},
 		goToCreateOrder(serviceType) {
 			uni.navigateTo({

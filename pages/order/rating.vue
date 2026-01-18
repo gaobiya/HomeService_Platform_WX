@@ -51,8 +51,8 @@ export default {
 		}
 	},
 	onLoad(options) {
-		this.orderId = options.id
-		this.userId = uni.getStorageSync('userId')
+		this.orderId = parseInt(options.id) || 0
+		this.userId = parseInt(uni.getStorageSync('userId')) || 0
 		this.loadOrder()
 	},
 	methods: {
@@ -89,8 +89,22 @@ export default {
 				? this.order.workerId 
 				: this.order.customerId
 			
+			if (!rateeId) {
+				uni.showToast({
+					title: '无法确定被评价人',
+					icon: 'none'
+				})
+				return
+			}
+			
 			this.loading = true
-			createRating(this.orderId, this.userId, rateeId, this.rating, this.comment)
+			createRating(
+				parseInt(this.orderId), 
+				parseInt(this.userId), 
+				parseInt(rateeId), 
+				this.rating, 
+				this.comment
+			)
 				.then(res => {
 					if (res.code === 200) {
 						uni.showToast({

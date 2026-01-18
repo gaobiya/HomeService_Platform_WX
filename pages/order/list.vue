@@ -49,7 +49,8 @@
 					<text class="address">{{ order.address }}</text>
 					<text class="time">{{ formatDateTime(order.serviceTime) }}</text>
 				</view>
-				<view class="order-actions" v-if="userRole === 'worker' && order.status === 'IN_PROGRESS'">
+				<view class="order-actions" v-if="userRole === 'worker' && order.status === 'IN_PROGRESS' && order.workerId == userId">
+					<button class="action-btn reject-btn" @click.stop="handleReject(order.id)">拒绝订单</button>
 					<button class="action-btn" @click.stop="handleComplete(order.id)">完成服务</button>
 				</view>
 			</view>
@@ -62,24 +63,30 @@
 </template>
 
 <script>
-import { getCustomerOrders, getWorkerOrders, completeOrder } from '../../api/order'
+import { getCustomerOrders, getWorkerOrders, completeOrder, rejectOrder } from '../../api/order'
 
 export default {
-	data() {
-		return {
-			currentTab: 'all',
-			orderList: [],
-			userRole: '',
-			userId: ''
-		}
-	},
-	onLoad() {
-		this.userRole = uni.getStorageSync('role')
-		this.userId = uni.getStorageSync('userId')
+		data() {
+			return {
+				currentTab: 'all',
+				orderList: [],
+				userRole: '',
+				userId: 0
+			}
+		},
+		onLoad() {
+			this.userRole = uni.getStorageSync('role')
+			this.userId = parseInt(uni.getStorageSync('userId')) || 0
 		this.loadOrders()
 	},
 	onShow() {
 		this.loadOrders()
+	},
+	onPullDownRefresh() {
+		// 下拉刷新
+		this.loadOrders().finally(() => {
+			uni.stopPullDownRefresh()
+		})
 	},
 	methods: {
 		switchTab(tab) {
@@ -90,20 +97,27 @@ export default {
 			const status = this.currentTab === 'all' ? null : this.currentTab
 			
 			if (this.userRole === 'customer') {
-				getCustomerOrders(this.userId, status)
+				return getCustomerOrders(this.userId, status)
 					.then(res => {
 						if (res.code === 200) {
 							this.orderList = res.data || []
 						}
+					})
+					.catch(err => {
+						console.error('加载订单失败:', err)
 					})
 			} else if (this.userRole === 'worker') {
-				getWorkerOrders(this.userId, status)
+				return getWorkerOrders(this.userId, status)
 					.then(res => {
 						if (res.code === 200) {
 							this.orderList = res.data || []
 						}
 					})
+					.catch(err => {
+						console.error('加载订单失败:', err)
+					})
 			}
+			return Promise.resolve()
 		},
 		goToDetail(orderId) {
 			uni.navigateTo({
@@ -269,8 +283,13 @@ export default {
 	border-top: 2rpx solid #F0F0F0;
 }
 
+.order-actions {
+	display: flex;
+	gap: 20rpx;
+}
+
 .action-btn {
-	width: 100%;
+	flex: 1;
 	height: 70rpx;
 	line-height: 70rpx;
 	background: #1890FF;
@@ -278,6 +297,10 @@ export default {
 	border-radius: 10rpx;
 	font-size: 28rpx;
 	border: none;
+}
+
+.action-btn.reject-btn {
+	background: #FF4D4F;
 }
 
 .empty {

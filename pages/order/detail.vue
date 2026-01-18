@@ -45,7 +45,14 @@
 				评价服务
 			</button>
 			<button 
-				v-if="userRole === 'worker' && order.status === 'IN_PROGRESS'"
+				v-if="userRole === 'worker' && order.status === 'IN_PROGRESS' && order.workerId == userId"
+				class="action-btn reject-btn"
+				@click="handleReject"
+			>
+				拒绝订单
+			</button>
+			<button 
+				v-if="userRole === 'worker' && order.status === 'IN_PROGRESS' && order.workerId == userId"
 				class="action-btn primary"
 				@click="handleComplete"
 			>
@@ -56,7 +63,7 @@
 </template>
 
 <script>
-import { getOrderDetail, completeOrder } from '../../api/order'
+import { getOrderDetail, completeOrder, rejectOrder } from '../../api/order'
 
 export default {
 	data() {
@@ -69,6 +76,7 @@ export default {
 	onLoad(options) {
 		this.orderId = options.id
 		this.userRole = uni.getStorageSync('role')
+		this.userId = parseInt(uni.getStorageSync('userId')) || 0
 		this.loadDetail()
 	},
 	methods: {
@@ -79,6 +87,35 @@ export default {
 						this.order = res.data
 					}
 				})
+		},
+		handleReject() {
+			uni.showModal({
+				title: '确认拒绝',
+				content: '确定要拒绝此订单吗？拒绝后订单将重新进入派单池。',
+				success: (res) => {
+					if (res.confirm) {
+						rejectOrder(this.orderId, this.userId)
+							.then(result => {
+								if (result.code === 200) {
+									uni.showToast({
+										title: '已拒绝订单',
+										icon: 'success'
+									})
+									setTimeout(() => {
+										uni.navigateBack()
+									}, 1500)
+								}
+							})
+							.catch(err => {
+								console.error('拒绝订单失败:', err)
+								uni.showToast({
+									title: err.message || '拒绝失败',
+									icon: 'none'
+								})
+							})
+					}
+				}
+			})
 		},
 		handleComplete() {
 			uni.showModal({
@@ -207,10 +244,12 @@ export default {
 
 .actions {
 	padding: 20rpx;
+	display: flex;
+	gap: 20rpx;
 }
 
 .action-btn {
-	width: 100%;
+	flex: 1;
 	height: 88rpx;
 	line-height: 88rpx;
 	background: #1890FF;
@@ -218,10 +257,13 @@ export default {
 	border-radius: 10rpx;
 	font-size: 32rpx;
 	border: none;
-	margin-bottom: 20rpx;
 }
 
 .action-btn.primary {
 	background: #1890FF;
+}
+
+.action-btn.reject-btn {
+	background: #FF4D4F;
 }
 </style>

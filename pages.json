@@ -9,7 +9,8 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "首页"
+				"navigationBarTitleText": "首页",
+				"enablePullDownRefresh": true
 			}
 		},
 		{
@@ -21,7 +22,8 @@
 		{
 			"path": "pages/order/list",
 			"style": {
-				"navigationBarTitleText": "我的订单"
+				"navigationBarTitleText": "我的订单",
+				"enablePullDownRefresh": true
 			}
 		},
 		{
@@ -40,6 +42,24 @@
 			"path": "pages/order/rating",
 			"style": {
 				"navigationBarTitleText": "评价"
+			}
+		},
+		{
+			"path": "pages/profile/profile",
+			"style": {
+				"navigationBarTitleText": "个人中心"
+			}
+		},
+		{
+			"path": "pages/worker/service-types",
+			"style": {
+				"navigationBarTitleText": "服务项目设置"
+			}
+		},
+		{
+			"path": "pages/worker/schedule",
+			"style": {
+				"navigationBarTitleText": "日程管理"
 			}
 		}
 	],
@@ -62,12 +82,18 @@
 				"selectedIconPath": "static/home-active.png",
 				"text": "首页"
 			},
-			{
-				"pagePath": "pages/order/list",
-				"iconPath": "static/order.png",
-				"selectedIconPath": "static/order-active.png",
-				"text": "订单"
-			}
+		{
+			"pagePath": "pages/order/list",
+			"iconPath": "static/order.png",
+			"selectedIconPath": "static/order-active.png",
+			"text": "订单"
+		},
+		{
+			"pagePath": "pages/profile/profile",
+			"iconPath": "static/profile.png",
+			"selectedIconPath": "static/profile-active.png",
+			"text": "我的"
+		}
 		]
 	}
 }
