@@ -34,19 +34,19 @@ export function getWorkerOrders(workerId, status) {
  * 服务员接单
  */
 export function acceptOrder(orderId, workerId) {
-  return request('/order/accept', 'PUT', { orderId, workerId })
+  return request(`/order/accept?orderId=${orderId}&workerId=${workerId}`, 'PUT')
 }
 
 /**
  * 完成订单
  */
 export function completeOrder(orderId) {
-  return request('/order/complete', 'PUT', { orderId })
+  return request(`/order/complete?orderId=${orderId}`, 'PUT')
 }
 
 /**
  * 支付订单
  */
 export function payOrder(orderId, amount) {
-  return request('/order/pay', 'POST', { orderId, amount })
+  return request(`/order/pay?orderId=${orderId}&amount=${amount}`, 'POST')
 }

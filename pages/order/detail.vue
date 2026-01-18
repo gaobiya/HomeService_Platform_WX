@@ -122,6 +122,7 @@ export default {
 		getStatusName(status) {
 			const map = {
 				'PENDING': '待审核',
+				'APPROVED': '已审核待派单',
 				'IN_PROGRESS': '进行中',
 				'COMPLETED': '已完成',
 				'CANCELLED': '已取消'
@@ -131,6 +132,7 @@ export default {
 		getStatusClass(status) {
 			const map = {
 				'PENDING': 'warning',
+				'APPROVED': 'info',
 				'IN_PROGRESS': 'primary',
 				'COMPLETED': 'success',
 				'CANCELLED': 'info'
