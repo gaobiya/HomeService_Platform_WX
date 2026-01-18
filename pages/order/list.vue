@@ -1,0 +1,287 @@
+<template>
+	<view class="order-list">
+		<view class="tabs">
+			<view 
+				class="tab-item" 
+				:class="{ active: currentTab === 'all' }"
+				@click="switchTab('all')"
+			>
+				全部
+			</view>
+			<view 
+				class="tab-item" 
+				:class="{ active: currentTab === 'PENDING' }"
+				@click="switchTab('PENDING')"
+			>
+				待处理
+			</view>
+			<view 
+				class="tab-item" 
+				:class="{ active: currentTab === 'IN_PROGRESS' }"
+				@click="switchTab('IN_PROGRESS')"
+			>
+				进行中
+			</view>
+			<view 
+				class="tab-item" 
+				:class="{ active: currentTab === 'COMPLETED' }"
+				@click="switchTab('COMPLETED')"
+			>
+				已完成
+			</view>
+		</view>
+		
+		<view class="order-items">
+			<view 
+				class="order-item" 
+				v-for="order in orderList" 
+				:key="order.id"
+				@click="goToDetail(order.id)"
+			>
+				<view class="order-header">
+					<text class="order-id">订单号：{{ order.id }}</text>
+					<text class="status" :class="getStatusClass(order.status)">
+						{{ getStatusName(order.status) }}
+					</text>
+				</view>
+				<view class="order-content">
+					<text class="service-type">{{ getServiceTypeName(order.serviceType) }}</text>
+					<text class="address">{{ order.address }}</text>
+					<text class="time">{{ formatDateTime(order.serviceTime) }}</text>
+				</view>
+				<view class="order-actions" v-if="userRole === 'worker' && order.status === 'IN_PROGRESS'">
+					<button class="action-btn" @click.stop="handleComplete(order.id)">完成服务</button>
+				</view>
+			</view>
+			
+			<view v-if="orderList.length === 0" class="empty">
+				<text>暂无订单</text>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script>
+import { getCustomerOrders, getWorkerOrders, completeOrder } from '../../api/order'
+
+export default {
+	data() {
+		return {
+			currentTab: 'all',
+			orderList: [],
+			userRole: '',
+			userId: ''
+		}
+	},
+	onLoad() {
+		this.userRole = uni.getStorageSync('role')
+		this.userId = uni.getStorageSync('userId')
+		this.loadOrders()
+	},
+	onShow() {
+		this.loadOrders()
+	},
+	methods: {
+		switchTab(tab) {
+			this.currentTab = tab
+			this.loadOrders()
+		},
+		loadOrders() {
+			const status = this.currentTab === 'all' ? null : this.currentTab
+			
+			if (this.userRole === 'customer') {
+				getCustomerOrders(this.userId, status)
+					.then(res => {
+						if (res.code === 200) {
+							this.orderList = res.data || []
+						}
+					})
+			} else if (this.userRole === 'worker') {
+				getWorkerOrders(this.userId, status)
+					.then(res => {
+						if (res.code === 200) {
+							this.orderList = res.data || []
+						}
+					})
+			}
+		},
+		goToDetail(orderId) {
+			uni.navigateTo({
+				url: `/pages/order/detail?id=${orderId}`
+			})
+		},
+		handleComplete(orderId) {
+			uni.showModal({
+				title: '确认',
+				content: '确定完成此订单？',
+				success: (res) => {
+					if (res.confirm) {
+						completeOrder(orderId)
+							.then(result => {
+								if (result.code === 200) {
+									uni.showToast({
+										title: '订单已完成',
+										icon: 'success'
+									})
+									this.loadOrders()
+								}
+							})
+					}
+				}
+			})
+		},
+		getServiceTypeName(type) {
+			const map = {
+				'cleaning': '保洁',
+				'repair': '维修',
+				'cooking': '做饭',
+				'babysitting': '育儿'
+			}
+			return map[type] || type
+		},
+		getStatusName(status) {
+			const map = {
+				'PENDING': '待审核',
+				'IN_PROGRESS': '进行中',
+				'COMPLETED': '已完成',
+				'CANCELLED': '已取消'
+			}
+			return map[status] || status
+		},
+		getStatusClass(status) {
+			const map = {
+				'PENDING': 'warning',
+				'IN_PROGRESS': 'primary',
+				'COMPLETED': 'success',
+				'CANCELLED': 'info'
+			}
+			return map[status] || ''
+		},
+		formatDateTime(dateTime) {
+			if (!dateTime) return ''
+			return new Date(dateTime).toLocaleString('zh-CN')
+		}
+	}
+}
+</script>
+
+<style scoped>
+.order-list {
+	min-height: 100vh;
+	background: #F5F5F5;
+}
+
+.tabs {
+	display: flex;
+	background: #fff;
+	padding: 20rpx 0;
+}
+
+.tab-item {
+	flex: 1;
+	text-align: center;
+	font-size: 28rpx;
+	color: #666;
+	padding: 20rpx 0;
+}
+
+.tab-item.active {
+	color: #1890FF;
+	border-bottom: 4rpx solid #1890FF;
+}
+
+.order-items {
+	padding: 20rpx;
+}
+
+.order-item {
+	background: #fff;
+	border-radius: 20rpx;
+	padding: 30rpx;
+	margin-bottom: 20rpx;
+}
+
+.order-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20rpx;
+}
+
+.order-id {
+	font-size: 24rpx;
+	color: #999;
+}
+
+.status {
+	font-size: 26rpx;
+	padding: 8rpx 20rpx;
+	border-radius: 20rpx;
+}
+
+.status.warning {
+	background: #FFF7E6;
+	color: #FA8C16;
+}
+
+.status.primary {
+	background: #E6F7FF;
+	color: #1890FF;
+}
+
+.status.success {
+	background: #F6FFED;
+	color: #52C41A;
+}
+
+.status.info {
+	background: #F0F0F0;
+	color: #999;
+}
+
+.order-content {
+	display: flex;
+	flex-direction: column;
+	gap: 10rpx;
+}
+
+.service-type {
+	font-size: 32rpx;
+	font-weight: bold;
+	color: #333;
+}
+
+.address {
+	font-size: 28rpx;
+	color: #666;
+}
+
+.time {
+	font-size: 24rpx;
+	color: #999;
+}
+
+.order-actions {
+	margin-top: 20rpx;
+	padding-top: 20rpx;
+	border-top: 2rpx solid #F0F0F0;
+}
+
+.action-btn {
+	width: 100%;
+	height: 70rpx;
+	line-height: 70rpx;
+	background: #1890FF;
+	color: #fff;
+	border-radius: 10rpx;
+	font-size: 28rpx;
+	border: none;
+}
+
+.empty {
+	text-align: center;
+	padding: 100rpx 0;
+	color: #999;
+	font-size: 28rpx;
+}
+</style>

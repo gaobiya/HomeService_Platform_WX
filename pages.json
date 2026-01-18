@@ -1,0 +1,73 @@
+{
+	"pages": [
+		{
+			"path": "pages/login/login",
+			"style": {
+				"navigationBarTitleText": "登录"
+			}
+		},
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "首页"
+			}
+		},
+		{
+			"path": "pages/order/create",
+			"style": {
+				"navigationBarTitleText": "发布订单"
+			}
+		},
+		{
+			"path": "pages/order/list",
+			"style": {
+				"navigationBarTitleText": "我的订单"
+			}
+		},
+		{
+			"path": "pages/order/detail",
+			"style": {
+				"navigationBarTitleText": "订单详情"
+			}
+		},
+		{
+			"path": "pages/order/pay",
+			"style": {
+				"navigationBarTitleText": "支付"
+			}
+		},
+		{
+			"path": "pages/order/rating",
+			"style": {
+				"navigationBarTitleText": "评价"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "家政服务预约平台",
+		"navigationBarBackgroundColor": "#1890FF",
+		"navigationBarTextStyle": "white",
+		"backgroundColor": "#F5F5F5"
+	},
+	"tabBar": {
+		"color": "#7A7E83",
+		"selectedColor": "#1890FF",
+		"borderStyle": "black",
+		"backgroundColor": "#ffffff",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"iconPath": "static/home.png",
+				"selectedIconPath": "static/home-active.png",
+				"text": "首页"
+			},
+			{
+				"pagePath": "pages/order/list",
+				"iconPath": "static/order.png",
+				"selectedIconPath": "static/order-active.png",
+				"text": "订单"
+			}
+		]
+	}
+}
