@@ -23,10 +23,26 @@ export function getCustomerOrders(customerId, status) {
 }
 
 /**
+ * 获取客户订单列表（分页）
+ */
+export function getCustomerOrdersPage(customerId, status, pageNum, pageSize) {
+  const url = status ? `/order/list/customer/page?customerId=${customerId}&status=${status}&pageNum=${pageNum}&pageSize=${pageSize}` : `/order/list/customer/page?customerId=${customerId}&pageNum=${pageNum}&pageSize=${pageSize}`
+  return request(url, 'GET')
+}
+
+/**
  * 获取服务员订单列表
  */
 export function getWorkerOrders(workerId, status) {
   const url = status ? `/order/list/worker?workerId=${workerId}&status=${status}` : `/order/list/worker?workerId=${workerId}`
+  return request(url, 'GET')
+}
+
+/**
+ * 获取服务员订单列表（分页）
+ */
+export function getWorkerOrdersPage(workerId, status, pageNum, pageSize) {
+  const url = status ? `/order/list/worker/page?workerId=${workerId}&status=${status}&pageNum=${pageNum}&pageSize=${pageSize}` : `/order/list/worker/page?workerId=${workerId}&pageNum=${pageNum}&pageSize=${pageSize}`
   return request(url, 'GET')
 }
 

@@ -94,7 +94,7 @@
 </template>
 
 <script>
-import { getCustomerOrders, getWorkerOrders, completeOrder, rejectOrder } from '../../api/order'
+import { getCustomerOrders, getWorkerOrders, getCustomerOrdersPage, getWorkerOrdersPage, completeOrder, rejectOrder } from '../../api/order'
 import { getOrderRatings } from '../../api/rating'
 
 export default {
@@ -103,7 +103,12 @@ export default {
 				currentTab: 'all',
 				orderList: [],
 				userRole: '',
-				userId: 0
+				userId: 0,
+				pageNum: 1,
+				pageSize: 10,
+				total: 0,
+				hasMore: true,
+				loading: false
 			}
 		},
 		onLoad() {
@@ -114,46 +119,113 @@ export default {
 	onShow() {
 		this.loadOrders()
 	},
-	onPullDownRefresh() {
-		// 下拉刷新
-		this.loadOrders().finally(() => {
-			uni.stopPullDownRefresh()
-		})
-	},
+		onPullDownRefresh() {
+			// 下拉刷新
+			this.pageNum = 1
+			this.hasMore = true
+			this.orderList = []
+			this.loadOrders().finally(() => {
+				uni.stopPullDownRefresh()
+			})
+		},
+		onReachBottom() {
+			// 上拉加载更多
+			if (this.hasMore && !this.loading) {
+				this.loadMore()
+			}
+		},
 	methods: {
 		switchTab(tab) {
 			this.currentTab = tab
 			this.loadOrders()
 		},
 		loadOrders() {
+			if (this.loading) return Promise.resolve()
+			this.loading = true
+			this.pageNum = 1
+			this.hasMore = true
 			const status = this.currentTab === 'all' ? null : this.currentTab
 			
 			if (this.userRole === 'customer') {
-				return getCustomerOrders(this.userId, status)
+				return getCustomerOrdersPage(this.userId, status, this.pageNum, this.pageSize)
 					.then(res => {
-						if (res.code === 200) {
-							this.orderList = res.data || []
+						if (res.code === 200 && res.data) {
+							this.orderList = res.data.records || []
+							this.total = res.data.total || 0
+							this.hasMore = this.orderList.length < this.total
 							// 检查每个订单的评价状态
 							this.checkRatingsForOrders()
 						}
 					})
 					.catch(err => {
 						console.error('加载订单失败:', err)
+					})
+					.finally(() => {
+						this.loading = false
 					})
 			} else if (this.userRole === 'worker') {
-				return getWorkerOrders(this.userId, status)
+				return getWorkerOrdersPage(this.userId, status, this.pageNum, this.pageSize)
 					.then(res => {
-						if (res.code === 200) {
-							this.orderList = res.data || []
+						if (res.code === 200 && res.data) {
+							this.orderList = res.data.records || []
+							this.total = res.data.total || 0
+							this.hasMore = this.orderList.length < this.total
 							// 检查每个订单的评价状态
 							this.checkRatingsForOrders()
 						}
 					})
 					.catch(err => {
 						console.error('加载订单失败:', err)
+					})
+					.finally(() => {
+						this.loading = false
 					})
 			}
 			return Promise.resolve()
+		},
+		loadMore() {
+			if (this.loading || !this.hasMore) return
+			this.loading = true
+			this.pageNum++
+			const status = this.currentTab === 'all' ? null : this.currentTab
+			
+			if (this.userRole === 'customer') {
+				getCustomerOrdersPage(this.userId, status, this.pageNum, this.pageSize)
+					.then(res => {
+						if (res.code === 200 && res.data) {
+							const newOrders = res.data.records || []
+							this.orderList = [...this.orderList, ...newOrders]
+							this.hasMore = this.orderList.length < res.data.total
+							// 检查新订单的评价状态
+							this.checkRatingsForOrders()
+						}
+					})
+					.catch(err => {
+						console.error('加载更多订单失败:', err)
+						this.pageNum-- // 失败时回退页码
+					})
+					.finally(() => {
+						this.loading = false
+					})
+			} else if (this.userRole === 'worker') {
+				getWorkerOrdersPage(this.userId, status, this.pageNum, this.pageSize)
+					.then(res => {
+						if (res.code === 200 && res.data) {
+							const newOrders = res.data.records || []
+							this.orderList = [...this.orderList, ...newOrders]
+							this.hasMore = this.orderList.length < res.data.total
+							// 检查新订单的评价状态
+							this.checkRatingsForOrders()
+						}
+					})
+					.catch(err => {
+						console.error('加载更多订单失败:', err)
+						this.pageNum-- // 失败时回退页码
+					})
+					.finally(() => {
+						this.loading = false
+					})
+			}
 		},
 		goToDetail(orderId) {
 			uni.navigateTo({
@@ -427,5 +499,12 @@ export default {
 	color: #52C41A;
 	font-size: 24rpx;
 	font-weight: 500;
+}
+
+.loading-more, .no-more {
+	text-align: center;
+	padding: 30rpx 0;
+	color: #999;
+	font-size: 24rpx;
 }
 </style>
