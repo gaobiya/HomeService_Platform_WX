@@ -295,7 +295,8 @@ export default {
 				'APPROVED': '已审核待派单',
 				'IN_PROGRESS': '进行中',
 				'COMPLETED': '已完成',
-				'CANCELLED': '已取消'
+				'CANCELLED': '已取消',
+				'REJECTED': '已驳回'
 			}
 			return map[status] || status
 		},

@@ -320,7 +320,7 @@ export default {
 <style scoped>
 .login-container {
 	min-height: 100vh;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #1890FF 0%, #096DD9 100%);
 	padding: 80rpx 40rpx;
 }
 

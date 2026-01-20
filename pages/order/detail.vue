@@ -38,12 +38,18 @@
 				立即支付
 			</button>
 			<button 
-				v-if="userRole === 'customer' && order.status === 'COMPLETED' && order.paid === 1"
+				v-if="userRole === 'customer' && order.status === 'COMPLETED' && order.paid === 1 && !hasRated"
 				class="action-btn"
 				@click="goToRating"
 			>
 				评价服务
 			</button>
+			<view 
+				v-if="userRole === 'customer' && order.status === 'COMPLETED' && order.paid === 1 && hasRated"
+				class="rated-tip"
+			>
+				<text>已评价</text>
+			</view>
 			<button 
 				v-if="userRole === 'worker' && order.status === 'IN_PROGRESS' && order.workerId == userId"
 				class="action-btn reject-btn"
@@ -58,19 +64,41 @@
 			>
 				完成服务
 			</button>
+			<button 
+				v-if="userRole === 'worker' && order.status === 'COMPLETED' && order.paid === 1 && order.workerId == userId && !hasRated"
+				class="action-btn"
+				@click="goToRating"
+			>
+				评价客户
+			</button>
+			<view 
+				v-if="userRole === 'worker' && order.status === 'COMPLETED' && order.paid === 1 && order.workerId == userId && hasRated"
+				class="rated-tip"
+			>
+				<text>已评价</text>
+			</view>
+			<view 
+				v-if="userRole === 'worker' && order.status === 'COMPLETED' && order.paid === 0 && order.workerId == userId"
+				class="waiting-tip"
+			>
+				<text>等待客户支付后即可评价</text>
+			</view>
 		</view>
 	</view>
 </template>
 
 <script>
 import { getOrderDetail, completeOrder, rejectOrder } from '../../api/order'
+import { getOrderRatings } from '../../api/rating'
 
 export default {
 	data() {
 		return {
 			order: null,
 			orderId: '',
-			userRole: ''
+			userRole: '',
+			userId: 0,
+			hasRated: false
 		}
 	},
 	onLoad(options) {
@@ -79,14 +107,38 @@ export default {
 		this.userId = parseInt(uni.getStorageSync('userId')) || 0
 		this.loadDetail()
 	},
+	onShow() {
+		// 页面显示时重新加载订单数据（支付完成后返回时刷新）
+		if (this.orderId) {
+			this.loadDetail()
+		}
+	},
 	methods: {
 		loadDetail() {
 			getOrderDetail(this.orderId)
 				.then(res => {
 					if (res.code === 200) {
 						this.order = res.data
+						// 检查是否已评价
+						this.checkRatingStatus()
 					}
 				})
+		},
+		checkRatingStatus() {
+			// 只有订单已完成时才检查评价状态
+			if (this.order && this.order.status === 'COMPLETED' && this.userId) {
+				getOrderRatings(this.orderId)
+					.then(res => {
+						if (res.code === 200) {
+							const ratings = res.data || []
+							// 检查当前用户是否已经评价过
+							this.hasRated = ratings.some(rating => rating.raterId === this.userId)
+						}
+					})
+					.catch(err => {
+						console.error('检查评价状态失败:', err)
+					})
+			}
 		},
 		handleReject() {
 			uni.showModal({
@@ -162,7 +214,8 @@ export default {
 				'APPROVED': '已审核待派单',
 				'IN_PROGRESS': '进行中',
 				'COMPLETED': '已完成',
-				'CANCELLED': '已取消'
+				'CANCELLED': '已取消',
+				'REJECTED': '已驳回'
 			}
 			return map[status] || status
 		},
@@ -172,7 +225,8 @@ export default {
 				'APPROVED': 'info',
 				'IN_PROGRESS': 'primary',
 				'COMPLETED': 'success',
-				'CANCELLED': 'info'
+				'CANCELLED': 'info',
+				'REJECTED': 'danger'
 			}
 			return map[status] || ''
 		},
@@ -242,6 +296,10 @@ export default {
 	color: #999;
 }
 
+.value.status.danger {
+	color: #FF4D4F;
+}
+
 .actions {
 	padding: 20rpx;
 	display: flex;
@@ -265,5 +323,20 @@ export default {
 
 .action-btn.reject-btn {
 	background: #FF4D4F;
+}
+
+.waiting-tip {
+	text-align: center;
+	padding: 20rpx 0;
+	color: #999;
+	font-size: 24rpx;
+}
+
+.rated-tip {
+	text-align: center;
+	padding: 20rpx 0;
+	color: #52C41A;
+	font-size: 28rpx;
+	font-weight: 500;
 }
 </style>

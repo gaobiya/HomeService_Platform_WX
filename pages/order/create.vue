@@ -3,7 +3,7 @@
 		<view class="form-container">
 			<view class="form-item">
 				<text class="label">服务类型</text>
-				<input class="input" v-model="formData.serviceType" disabled placeholder="服务类型" />
+				<input class="input" :value="getServiceTypeName(formData.serviceType)" disabled placeholder="服务类型" />
 			</view>
 			
 			<view class="form-item">
@@ -107,6 +107,15 @@ export default {
 				.finally(() => {
 					this.loading = false
 				})
+		},
+		getServiceTypeName(type) {
+			const map = {
+				'cleaning': '保洁服务',
+				'repair': '维修服务',
+				'cooking': '做饭服务',
+				'babysitting': '育儿服务'
+			}
+			return map[type] || type
 		}
 	}
 }

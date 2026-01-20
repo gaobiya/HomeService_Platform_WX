@@ -1,7 +1,7 @@
 <template>
 	<view class="rating-page">
 		<view class="rating-card">
-			<text class="title">服务评价</text>
+			<text class="title">{{ ratingTitle }}</text>
 			
 			<view class="rating-section">
 				<text class="label">评分</text>
@@ -47,12 +47,15 @@ export default {
 			rating: 0,
 			comment: '',
 			loading: false,
-			userId: ''
+			userId: '',
+			userRole: '',
+			ratingTitle: '服务评价'
 		}
 	},
 	onLoad(options) {
 		this.orderId = parseInt(options.id) || 0
 		this.userId = parseInt(uni.getStorageSync('userId')) || 0
+		this.userRole = uni.getStorageSync('role') || ''
 		this.loadOrder()
 	},
 	methods: {
@@ -61,6 +64,12 @@ export default {
 				.then(res => {
 					if (res.code === 200) {
 						this.order = res.data
+						// 根据角色设置评价标题
+						if (this.userRole === 'worker') {
+							this.ratingTitle = '评价客户'
+						} else {
+							this.ratingTitle = '评价服务'
+						}
 					}
 				})
 		},
@@ -79,6 +88,15 @@ export default {
 			if (!this.order) {
 				uni.showToast({
 					title: '订单信息加载中',
+					icon: 'none'
+				})
+				return
+			}
+			
+			// 服务员评价客户时，需要检查订单是否已支付
+			if (this.userRole === 'worker' && this.order.paid === 0) {
+				uni.showToast({
+					title: '订单未支付，无法评价',
 					icon: 'none'
 				})
 				return
@@ -117,7 +135,7 @@ export default {
 					}
 				})
 				.catch(err => {
-					console.error('评价失败:', err)
+					// console.error('评价失败:', err)
 				})
 				.finally(() => {
 					this.loading = false

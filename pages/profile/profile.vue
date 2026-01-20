@@ -5,7 +5,7 @@
 			<view class="avatar-section" @click="changeAvatar">
 				<image 
 					class="avatar" 
-					:src="userInfo.avatarUrl || '/static/default-avatar.png'" 
+					:src="getAvatarUrl(userInfo.avatarUrl)" 
 					mode="aspectFill"
 				></image>
 				<text class="change-avatar-tip">点击更换头像</text>
@@ -359,6 +359,21 @@ export default {
 		formatDateTime(dateTime) {
 			if (!dateTime) return ''
 			return new Date(dateTime).toLocaleString('zh-CN')
+		},
+		getAvatarUrl(avatarUrl) {
+			if (!avatarUrl) {
+				return '/static/default-avatar.png'
+			}
+			// 如果已经是完整URL（http或https开头），直接返回
+			if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
+				return avatarUrl
+			}
+			// 如果是相对路径（以/开头），拼接后端服务器地址
+			if (avatarUrl.startsWith('/')) {
+				return 'http://localhost:8080' + avatarUrl
+			}
+			// 其他情况直接返回
+			return avatarUrl
 		}
 	}
 }
@@ -372,7 +387,7 @@ export default {
 }
 
 .user-card {
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #1890FF 0%, #096DD9 100%);
 	padding: 60rpx 40rpx;
 	color: #fff;
 	display: flex;

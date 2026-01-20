@@ -8,19 +8,15 @@
 			
 			<view class="service-types">
 				<view class="service-item" @click="goToCreateOrder('cleaning')">
-					<text class="icon">🧹</text>
 					<text class="name">保洁服务</text>
 				</view>
 				<view class="service-item" @click="goToCreateOrder('repair')">
-					<text class="icon">🔧</text>
 					<text class="name">维修服务</text>
 				</view>
 				<view class="service-item" @click="goToCreateOrder('cooking')">
-					<text class="icon">🍳</text>
 					<text class="name">做饭服务</text>
 				</view>
 				<view class="service-item" @click="goToCreateOrder('babysitting')">
-					<text class="icon">👶</text>
 					<text class="name">育儿服务</text>
 				</view>
 			</view>
@@ -152,7 +148,7 @@ export default {
 }
 
 .banner {
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #1890FF 0%, #096DD9 100%);
 	padding: 60rpx 40rpx;
 	color: #fff;
 }
@@ -177,15 +173,10 @@ export default {
 	box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.1);
 }
 
-.icon {
-	font-size: 60rpx;
-	display: block;
-	margin-bottom: 20rpx;
-}
-
 .name {
-	font-size: 28rpx;
+	font-size: 32rpx;
 	color: #333;
+	font-weight: 500;
 }
 
 .quick-actions {
