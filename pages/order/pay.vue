@@ -10,8 +10,8 @@
 			<text class="info-text">订单号：{{ orderId }}</text>
 		</view>
 		
-		<button class="pay-btn" @click="handlePay" :disabled="loading">
-			{{ loading ? '支付中...' : '确认支付' }}
+		<button class="pay-btn" @click="handlePay" :disabled="loading || orderLoading || !amount || parseFloat(amount) <= 0">
+			{{ loading ? '支付中...' : (orderLoading ? '加载中...' : '确认支付') }}
 		</button>
 		
 		<view class="tip">
@@ -21,24 +21,79 @@
 </template>
 
 <script>
-import { payOrder } from '../../api/order'
+import { payOrder, getOrderDetail } from '../../api/order'
 
 export default {
 	data() {
 		return {
 			orderId: '',
-			amount: 100.00,
-			loading: false
+			amount: '0.00', // 使用字符串格式，方便显示两位小数
+			loading: false,
+			orderLoading: true
 		}
 	},
 	onLoad(options) {
 		this.orderId = options.id
-		// 这里可以从订单详情获取金额，简化处理使用固定金额
+		// 从订单详情获取金额
+		this.loadOrderDetail()
 	},
 	methods: {
+		/**
+		 * 加载订单详情，获取订单金额
+		 */
+		loadOrderDetail() {
+			this.orderLoading = true
+			getOrderDetail(this.orderId)
+				.then(res => {
+					if (res.code === 200 && res.data) {
+						// 从订单中获取金额，如果订单没有金额或金额为0，提示用户
+						const orderAmount = res.data.amount
+						if (orderAmount && parseFloat(orderAmount) > 0) {
+							// 保留两位小数
+							this.amount = parseFloat(orderAmount).toFixed(2)
+						} else {
+							// 如果订单没有设置金额，提示用户
+							uni.showToast({
+								title: '订单金额未设置',
+								icon: 'none',
+								duration: 2000
+							})
+							this.amount = '0.00'
+						}
+					} else {
+						uni.showToast({
+							title: '获取订单信息失败',
+							icon: 'none'
+						})
+						this.amount = '0.00'
+					}
+				})
+				.catch(err => {
+					console.error('加载订单详情失败:', err)
+					uni.showToast({
+						title: '加载订单信息失败',
+						icon: 'none'
+					})
+					this.amount = '0.00'
+				})
+				.finally(() => {
+					this.orderLoading = false
+				})
+		},
 		handlePay() {
+			// 检查金额是否有效
+			const payAmount = parseFloat(this.amount)
+			if (!payAmount || payAmount <= 0) {
+				uni.showToast({
+					title: '订单金额无效，无法支付',
+					icon: 'none'
+				})
+				return
+			}
+			
 			this.loading = true
-			payOrder(this.orderId, this.amount)
+			// 传递数字类型的金额给后端
+			payOrder(this.orderId, payAmount)
 				.then(res => {
 					if (res.code === 200) {
 						uni.showToast({
@@ -48,10 +103,19 @@ export default {
 						setTimeout(() => {
 							uni.navigateBack()
 						}, 1500)
+					} else {
+						uni.showToast({
+							title: res.message || '支付失败',
+							icon: 'none'
+						})
 					}
 				})
 				.catch(err => {
 					console.error('支付失败:', err)
+					uni.showToast({
+						title: err.message || '支付失败，请重试',
+						icon: 'none'
+					})
 				})
 				.finally(() => {
 					this.loading = false

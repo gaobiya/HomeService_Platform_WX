@@ -228,9 +228,13 @@ export default {
 				})
 				.catch(err => {
 					console.error('登录失败:', err)
+					// 显示后端返回的具体错误信息
+					// request.js 在登录页不会显示 toast，所以这里需要显示
+					const errorMsg = err.message || '登录失败，请检查用户名和密码'
 					uni.showToast({
-						title: err.message || '登录失败',
-						icon: 'none'
+						title: errorMsg,
+						icon: 'none',
+						duration: 2000
 					})
 				})
 				.finally(() => {

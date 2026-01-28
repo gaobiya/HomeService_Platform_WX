@@ -20,18 +20,48 @@ export function request(url, method = 'GET', data = {}) {
           if (res.data.code === 200) {
             resolve(res.data)
           } else if (res.data.code === 401) {
+            // 401 未授权：可能是登录失败或token过期
+            const errorMessage = res.data.message || '未登录'
+            
+            // 清除登录信息
             uni.removeStorageSync('token')
             uni.removeStorageSync('userId')
-            uni.reLaunch({
-              url: '/pages/login/login'
-            })
-            reject(new Error('未登录'))
+            uni.removeStorageSync('role')
+            uni.removeStorageSync('username')
+            
+            // 检查当前页面，如果是登录页则不跳转（避免循环跳转）
+            const pages = getCurrentPages()
+            const currentPage = pages[pages.length - 1]
+            const isLoginPage = currentPage && (
+              currentPage.route === 'pages/login/login' || 
+              currentPage.route === 'pages/login/login.vue'
+            )
+            
+            // 如果不在登录页，才跳转到登录页
+            if (!isLoginPage) {
+              uni.reLaunch({
+                url: '/pages/login/login'
+              })
+            }
+            
+            // 显示具体的错误信息（登录页不显示，由登录页自己处理）
+            if (!isLoginPage) {
+              uni.showToast({
+                title: errorMessage,
+                icon: 'none',
+                duration: 2000
+              })
+            }
+            
+            reject(new Error(errorMessage))
           } else {
+            // 其他错误码，显示后端返回的错误信息
+            const errorMessage = res.data.message || '请求失败'
             uni.showToast({
-              title: res.data.message || '请求失败',
+              title: errorMessage,
               icon: 'none'
             })
-            reject(new Error(res.data.message || '请求失败'))
+            reject(new Error(errorMessage))
           }
         } else {
           reject(new Error('网络错误'))

@@ -6,15 +6,15 @@
 			<view class="rating-section">
 				<text class="label">评分</text>
 				<view class="stars">
-					<text 
+					<image 
 						class="star" 
 						v-for="(item, index) in 5" 
 						:key="index"
 						:class="{ active: index < rating }"
+						:src="index < rating ? '/static/evaluate2.png' : '/static/evaluate.png'"
 						@click="setRating(index + 1)"
-					>
-						⭐
-					</text>
+						mode="aspectFit"
+					/>
 				</view>
 			</view>
 			
@@ -184,13 +184,14 @@ export default {
 }
 
 .star {
-	font-size: 50rpx;
-	color: #ddd;
+	width: 60rpx;
+	height: 60rpx;
 	transition: all 0.3s;
+	opacity: 0.5;
 }
 
 .star.active {
-	color: #FFD700;
+	opacity: 1;
 }
 
 .comment-section {
