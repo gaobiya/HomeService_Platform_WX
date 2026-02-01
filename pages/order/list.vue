@@ -10,10 +10,10 @@
 			</view>
 			<view 
 				class="tab-item" 
-				:class="{ active: currentTab === 'PENDING' }"
-				@click="switchTab('PENDING')"
+				:class="{ active: currentTab === (userRole === 'worker' ? 'ASSIGNED' : 'PENDING') }"
+				@click="switchTab(userRole === 'worker' ? 'ASSIGNED' : 'PENDING')"
 			>
-				待处理
+				{{ userRole === 'worker' ? '待接单' : '待处理' }}
 			</view>
 			<view 
 				class="tab-item" 
@@ -41,7 +41,7 @@
 				<view class="order-header">
 					<text class="order-id">订单号：{{ order.id }}</text>
 					<text class="status" :class="getStatusClass(order.status)">
-						{{ getStatusName(order.status) }}
+						{{ getOrderStatusText(order) }}
 					</text>
 				</view>
 				<view class="order-content">
@@ -49,21 +49,23 @@
 					<text class="address">{{ order.address }}</text>
 					<text class="time">{{ formatDateTime(order.serviceTime) }}</text>
 				</view>
+				<!-- 客户：已完成待支付时显示去支付 -->
+				<view class="order-actions" v-if="userRole === 'customer' && order.status === 'COMPLETED' && order.paid === 0">
+					<button class="action-btn pay-btn" @click.stop="goToPay(order.id)">
+						去支付
+					</button>
+				</view>
+				<!-- 服务员 -->
 				<view class="order-actions" v-if="userRole === 'worker' && order.workerId == userId">
-					<button 
-						v-if="order.status === 'IN_PROGRESS'"
-						class="action-btn reject-btn" 
-						@click.stop="handleReject(order.id)"
-					>
-						拒绝订单
-					</button>
-					<button 
-						v-if="order.status === 'IN_PROGRESS'"
-						class="action-btn" 
-						@click.stop="handleComplete(order.id)"
-					>
-						完成服务
-					</button>
+					<!-- 待接单：接受 + 拒绝 一起 -->
+					<template v-if="order.status === 'ASSIGNED'">
+						<button class="action-btn reject-btn" @click.stop="handleReject(order.id)">拒绝订单</button>
+						<button class="action-btn" @click.stop="handleAccept(order.id)">接受订单</button>
+					</template>
+					<!-- 进行中：只显示完成 -->
+					<template v-if="order.status === 'IN_PROGRESS'">
+						<button class="action-btn" @click.stop="handleComplete(order.id)">完成服务</button>
+					</template>
 					<button 
 						v-if="order.status === 'COMPLETED' && order.paid === 1 && !order.hasRated"
 						class="action-btn" 
@@ -94,7 +96,7 @@
 </template>
 
 <script>
-import { getCustomerOrders, getWorkerOrders, getCustomerOrdersPage, getWorkerOrdersPage, completeOrder, rejectOrder } from '../../api/order'
+import { getCustomerOrdersPage, getWorkerOrdersPage, completeOrder, rejectOrder, acceptOrder } from '../../api/order'
 import { getOrderRatings } from '../../api/rating'
 
 export default {
@@ -237,6 +239,32 @@ export default {
 				url: `/pages/order/rating?id=${orderId}`
 			})
 		},
+		goToPay(orderId) {
+			uni.navigateTo({
+				url: `/pages/order/detail?id=${orderId}`
+			})
+		},
+		handleAccept(orderId) {
+			uni.showModal({
+				title: '确认接单',
+				content: '确定接受此派单？接受后将进入服务流程。',
+				success: (res) => {
+					if (res.confirm) {
+						acceptOrder(orderId, this.userId)
+							.then(result => {
+								if (result.code === 200) {
+									uni.showToast({ title: '已接单', icon: 'success' })
+									this.loadOrders()
+								}
+							})
+							.catch(err => {
+								console.error('接单失败:', err)
+								uni.showToast({ title: err.message || '接单失败', icon: 'none' })
+							})
+					}
+				}
+			})
+		},
 		handleReject(orderId) {
 			uni.showModal({
 				title: '确认拒绝',
@@ -297,6 +325,7 @@ export default {
 			const map = {
 				'PENDING': '待审核',
 				'APPROVED': '已审核待派单',
+				'ASSIGNED': '待接单',
 				'IN_PROGRESS': '进行中',
 				'COMPLETED': '已完成',
 				'CANCELLED': '已取消',
@@ -304,10 +333,20 @@ export default {
 			}
 			return map[status] || status
 		},
+		// 列表展示用：已完成细分显示 待支付/待评价/已评价
+		getOrderStatusText(order) {
+			if (order.status !== 'COMPLETED') {
+				return this.getStatusName(order.status)
+			}
+			if (order.paid === 0) return '已完成待支付'
+			if (order.hasRated) return '已评价'
+			return '已完成待评价'
+		},
 		getStatusClass(status) {
 			const map = {
 				'PENDING': 'warning',
 				'APPROVED': 'info',
+				'ASSIGNED': 'warning',
 				'IN_PROGRESS': 'primary',
 				'COMPLETED': 'success',
 				'CANCELLED': 'info',

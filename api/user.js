@@ -42,3 +42,10 @@ export function uploadAvatar(userId, filePath) {
   // 实际使用uni.uploadFile在页面中调用
   return Promise.resolve()
 }
+
+/**
+ * 服务员提现（扣减余额并记录申请）
+ */
+export function withdraw(userId, amount) {
+  return request(`/user/withdraw?userId=${userId}&amount=${amount}`, 'POST')
+}

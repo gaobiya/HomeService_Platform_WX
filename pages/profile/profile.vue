@@ -1,128 +1,97 @@
 <template>
-	<view class="profile-container">
-		<!-- 用户信息卡片 -->
-		<view class="user-card">
-			<view class="avatar-section" @click="changeAvatar">
-				<image 
-					class="avatar" 
-					:src="getAvatarUrl(userInfo.avatarUrl)" 
-					mode="aspectFill"
-				></image>
-				<text class="change-avatar-tip">点击更换头像</text>
-			</view>
-			<view class="user-info">
-				<text class="username">{{ userInfo.username || '未设置' }}</text>
-				<text class="role">{{ getRoleName(userInfo.role) }}</text>
-			</view>
-		</view>
-		
-		<!-- 个人信息 -->
-		<view class="info-section">
-			<view class="section-title">个人信息</view>
-			<view class="info-item">
-				<text class="label">用户名</text>
-				<input 
-					class="value-input" 
-					v-model="editForm.username" 
-					placeholder="请输入用户名"
-					maxlength="20"
-				/>
-			</view>
-			<view class="info-item">
-				<text class="label">手机号</text>
-				<input 
-					class="value-input" 
-					v-model="editForm.phone" 
-					placeholder="请输入手机号"
-					type="number"
-					maxlength="11"
-				/>
-			</view>
-			<view class="info-item">
-				<text class="label">注册时间</text>
-				<text class="value">{{ formatDateTime(userInfo.createdAt) }}</text>
+	<view class="profile-page">
+		<!-- 沉浸式顶部 -->
+		<view class="profile-header">
+			<view class="header-bg"></view>
+			<view class="user-main animate-fade-in">
+				<view class="avatar-box" @click="changeAvatar">
+					<image 
+						class="avatar-img" 
+						:src="getAvatarUrl(userInfo.avatarUrl)" 
+						mode="aspectFill"
+					></image>
+				</view>
+				<view class="user-text">
+					<text class="user-name">{{ userInfo.username || '家政用户' }}</text>
+					<view class="role-tag">
+						<text>{{ getRoleName(userInfo.role) }}</text>
+					</view>
+				</view>
 			</view>
 		</view>
 		
-		<!-- 修改密码 -->
-		<view class="info-section">
-			<view class="section-title">修改密码</view>
-			<view class="info-item">
-				<text class="label">原密码</text>
-				<input 
-					class="value-input" 
-					v-model="passwordForm.oldPassword" 
-					placeholder="请输入原密码"
-					password
-					maxlength="20"
-				/>
+		<view class="profile-content scroll-body">
+			<!-- 服务员：我的余额 -->
+			<view class="info-card animate-slide-up" v-if="userInfo.role === 'worker'">
+				<view class="card-header">
+					<text class="title">我的余额</text>
+				</view>
+				<view class="balance-row">
+					<text class="balance-label">可提现余额</text>
+					<text class="balance-value">¥ {{ formatBalance(userInfo.balance) }}</text>
+				</view>
+				<button class="withdraw-btn" @click="goToWithdraw">提现</button>
 			</view>
-			<view class="info-item">
-				<text class="label">新密码</text>
-				<input 
-					class="value-input" 
-					v-model="passwordForm.newPassword" 
-					placeholder="请输入新密码（6-20个字符）"
-					password
-					maxlength="20"
-				/>
+			
+			<!-- 基本资料 / 安全设置 入口 -->
+			<view class="info-card animate-slide-up" :class="{ 'delay-1': userInfo.role === 'worker' }">
+				<view class="card-header">
+					<text class="title">账号与安全</text>
+				</view>
+				<view class="menu-group">
+					<view class="modern-menu-item" @click="goToBasicInfo">
+						<view class="menu-left">
+							<text>基本资料</text>
+						</view>
+						<text class="arrow">></text>
+					</view>
+					<view class="modern-menu-item" @click="goToSecurity">
+						<view class="menu-left">
+							<text>安全设置</text>
+						</view>
+						<text class="arrow">></text>
+					</view>
+				</view>
 			</view>
-			<view class="info-item">
-				<text class="label">确认新密码</text>
-				<input 
-					class="value-input" 
-					v-model="passwordForm.confirmPassword" 
-					placeholder="请再次输入新密码"
-					password
-					maxlength="20"
-				/>
+			
+			<!-- 工作人员管理区 -->
+			<view class="info-card animate-slide-up delay-2" v-if="userInfo.role === 'worker'">
+				<view class="card-header">
+					<text class="title">服务管理</text>
+				</view>
+				<view class="menu-group">
+					<view class="modern-menu-item" @click="goToServiceTypes">
+						<view class="menu-left">
+							<text>我的服务项目</text>
+						</view>
+						<text class="arrow">></text>
+					</view>
+					<view class="modern-menu-item" @click="goToSchedule">
+						<view class="menu-left">
+							<text>接单日程配置</text>
+						</view>
+						<text class="arrow">></text>
+					</view>
+				</view>
 			</view>
-		</view>
-		
-		<!-- 服务员专属功能 -->
-		<view class="info-section" v-if="userInfo.role === 'worker'">
-			<view class="section-title">服务管理</view>
-			<view class="menu-item" @click="goToServiceTypes">
-				<text class="menu-label">服务项目设置</text>
-				<text class="menu-arrow">></text>
+			
+			<!-- 退出按钮 -->
+			<view class="logout-section animate-slide-up delay-3">
+				<button class="logout-red-btn" @click="handleLogout">
+					<text>退出登录</text>
+				</button>
 			</view>
-			<view class="menu-item" @click="goToSchedule">
-				<text class="menu-label">日程管理</text>
-				<text class="menu-arrow">></text>
-			</view>
-		</view>
-		
-		<!-- 操作按钮 -->
-		<view class="action-buttons">
-			<button class="save-btn" @click="saveUserInfo" :disabled="saving">
-				{{ saving ? '保存中...' : '保存个人信息' }}
-			</button>
-			<button class="change-password-btn" @click="changePassword" :disabled="changingPassword">
-				{{ changingPassword ? '修改中...' : '修改密码' }}
-			</button>
-			<button class="logout-btn" @click="handleLogout">退出登录</button>
 		</view>
 	</view>
 </template>
 
 <script>
-import { getUserInfo, updateUser, changePassword, uploadAvatar } from '../../api/user'
+import { getUserInfo } from '../../api/user'
 
 export default {
 	data() {
 		return {
-			userInfo: {},
-			editForm: {
-				username: '',
-				phone: ''
-			},
-			passwordForm: {
-				oldPassword: '',
-				newPassword: '',
-				confirmPassword: ''
-			},
-			saving: false,
-			changingPassword: false
+			userInfo: {}
 		}
 	},
 	onLoad() {
@@ -132,23 +101,12 @@ export default {
 		loadUserInfo() {
 			const userId = uni.getStorageSync('userId')
 			if (!userId) {
-				uni.reLaunch({
-					url: '/pages/login/login'
-				})
+				uni.reLaunch({ url: '/pages/login/login' })
 				return
 			}
-			
-			getUserInfo(userId)
-				.then(res => {
-					if (res.code === 200) {
-						this.userInfo = res.data
-						this.editForm.username = res.data.username || ''
-						this.editForm.phone = res.data.phone || ''
-					}
-				})
-				.catch(err => {
-					console.error('加载用户信息失败:', err)
-				})
+			getUserInfo(userId).then(res => {
+				if (res.code === 200) this.userInfo = res.data
+			})
 		},
 		changeAvatar() {
 			uni.chooseImage({
@@ -156,379 +114,319 @@ export default {
 				sizeType: ['compressed'],
 				sourceType: ['album', 'camera'],
 				success: (res) => {
-					const tempFilePath = res.tempFilePaths[0]
-					this.uploadAvatarFile(tempFilePath)
+					this.uploadAvatarFile(res.tempFilePaths[0])
 				}
 			})
 		},
 		uploadAvatarFile(filePath) {
-			uni.showLoading({
-				title: '上传中...'
-			})
-			
+			uni.showLoading({ title: '正在同步头像' })
 			const userId = uni.getStorageSync('userId')
 			uni.uploadFile({
 				url: 'http://localhost:8080/api/user/upload-avatar',
 				filePath: filePath,
 				name: 'file',
-				formData: {
-					userId: userId
-				},
-				header: {
-					'Authorization': `Bearer ${uni.getStorageSync('token')}`
-				},
+				formData: { userId: userId },
+				header: { 'Authorization': `Bearer ${uni.getStorageSync('token')}` },
 				success: (res) => {
-					try {
-						const data = JSON.parse(res.data)
-						if (data.code === 200) {
-							this.userInfo.avatarUrl = data.data.avatarUrl
-							uni.showToast({
-								title: '头像上传成功',
-								icon: 'success'
-							})
-							this.loadUserInfo()
-						} else {
-							uni.showToast({
-								title: data.message || '上传失败',
-								icon: 'none'
-							})
-						}
-					} catch (e) {
-						uni.showToast({
-							title: '上传失败',
-							icon: 'none'
-						})
-					}
-				},
-				fail: (err) => {
-					console.error('上传失败:', err)
-					uni.showToast({
-						title: '上传失败',
-						icon: 'none'
-					})
-				},
-				complete: () => {
-					uni.hideLoading()
-				}
-			})
-		},
-		saveUserInfo() {
-			if (!this.editForm.username.trim()) {
-				uni.showToast({
-					title: '请输入用户名',
-					icon: 'none'
-				})
-				return
-			}
-			
-			if (this.editForm.phone && !/^1[3-9]\d{9}$/.test(this.editForm.phone)) {
-				uni.showToast({
-					title: '手机号格式不正确',
-					icon: 'none'
-				})
-				return
-			}
-			
-			this.saving = true
-			const updateData = {
-				id: this.userInfo.id,
-				username: this.editForm.username,
-				phone: this.editForm.phone,
-				avatarUrl: this.userInfo.avatarUrl
-			}
-			
-			updateUser(updateData)
-				.then(res => {
-					if (res.code === 200) {
-						uni.showToast({
-							title: '保存成功',
-							icon: 'success'
-						})
-						uni.setStorageSync('username', this.editForm.username)
+					const data = JSON.parse(res.data)
+					if (data.code === 200) {
+						uni.showToast({ title: '更新成功', icon: 'success' })
 						this.loadUserInfo()
 					}
-				})
-				.catch(err => {
-					console.error('保存失败:', err)
-					uni.showToast({
-						title: err.message || '保存失败',
-						icon: 'none'
-					})
-				})
-				.finally(() => {
-					this.saving = false
-				})
-		},
-		changePassword() {
-			if (!this.passwordForm.oldPassword) {
-				uni.showToast({
-					title: '请输入原密码',
-					icon: 'none'
-				})
-				return
-			}
-			
-			if (!this.passwordForm.newPassword) {
-				uni.showToast({
-					title: '请输入新密码',
-					icon: 'none'
-				})
-				return
-			}
-			
-			if (this.passwordForm.newPassword.length < 6 || this.passwordForm.newPassword.length > 20) {
-				uni.showToast({
-					title: '新密码长度必须在6-20个字符之间',
-					icon: 'none'
-				})
-				return
-			}
-			
-			if (this.passwordForm.newPassword !== this.passwordForm.confirmPassword) {
-				uni.showToast({
-					title: '两次输入的密码不一致',
-					icon: 'none'
-				})
-				return
-			}
-			
-			this.changingPassword = true
-			changePassword({
-				userId: this.userInfo.id,
-				oldPassword: this.passwordForm.oldPassword,
-				newPassword: this.passwordForm.newPassword
+				},
+				complete: () => { uni.hideLoading() }
 			})
-				.then(res => {
-					if (res.code === 200) {
-						uni.showToast({
-							title: '密码修改成功',
-							icon: 'success'
-						})
-						this.passwordForm = {
-							oldPassword: '',
-							newPassword: '',
-							confirmPassword: ''
-						}
-					}
-				})
-				.catch(err => {
-					console.error('修改密码失败:', err)
-					uni.showToast({
-						title: err.message || '修改密码失败',
-						icon: 'none'
-					})
-				})
-				.finally(() => {
-					this.changingPassword = false
-				})
+		},
+		goToBasicInfo() {
+			uni.navigateTo({ url: '/pages/profile/basic-info' })
+		},
+		goToSecurity() {
+			uni.navigateTo({ url: '/pages/profile/security' })
+		},
+		goToWithdraw() {
+			uni.navigateTo({ url: '/pages/profile/withdraw' })
+		},
+		formatBalance(balance) {
+			if (balance == null || balance === undefined) return '0.00'
+			const n = parseFloat(balance)
+			return isNaN(n) ? '0.00' : n.toFixed(2)
 		},
 		handleLogout() {
 			uni.showModal({
-				title: '提示',
-				content: '确定要退出登录吗？',
+				title: '安全退出',
+				content: '退出后将需要重新登录，确定吗？',
+				confirmColor: '#FF4D4F',
 				success: (res) => {
 					if (res.confirm) {
-						uni.removeStorageSync('token')
-						uni.removeStorageSync('userId')
-						uni.removeStorageSync('role')
-						uni.removeStorageSync('username')
-						uni.reLaunch({
-							url: '/pages/login/login'
-						})
+						uni.clearStorageSync()
+						uni.reLaunch({ url: '/pages/login/login' })
 					}
 				}
 			})
 		},
-		goToServiceTypes() {
-			uni.navigateTo({
-				url: '/pages/worker/service-types'
-			})
-		},
-		goToSchedule() {
-			uni.navigateTo({
-				url: '/pages/worker/schedule'
-			})
-		},
+		goToServiceTypes() { uni.navigateTo({ url: '/pages/worker/service-types' }) },
+		goToSchedule() { uni.navigateTo({ url: '/pages/worker/schedule' }) },
 		getRoleName(role) {
-			const map = {
-				'customer': '客户',
-				'worker': '服务员'
-			}
+			const map = { 'customer': '普通客户', 'worker': '服务员' }
 			return map[role] || role
 		},
 		formatDateTime(dateTime) {
-			if (!dateTime) return ''
-			return new Date(dateTime).toLocaleString('zh-CN')
+			if (!dateTime) return '-'
+			const d = new Date(dateTime)
+			return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`
 		},
 		getAvatarUrl(avatarUrl) {
-			if (!avatarUrl) {
-				return '/static/default-avatar.png'
-			}
-			// 如果已经是完整URL（http或https开头），直接返回
-			if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
-				return avatarUrl
-			}
-			// 如果是相对路径（以/开头），拼接后端服务器地址
-			if (avatarUrl.startsWith('/')) {
-				return 'http://localhost:8080' + avatarUrl
-			}
-			// 其他情况直接返回
-			return avatarUrl
+			if (!avatarUrl) return '/static/default-avatar.png'
+			if (avatarUrl.startsWith('http')) return avatarUrl
+			return 'http://localhost:8080' + (avatarUrl.startsWith('/') ? '' : '/') + avatarUrl
 		}
 	}
 }
 </script>
 
-<style scoped>
-.profile-container {
+<style lang="scss" scoped>
+.profile-page {
 	min-height: 100vh;
-	background: #F5F5F5;
-	padding-bottom: 40rpx;
+	background: #f8fafc;
 }
 
-.user-card {
-	background: linear-gradient(135deg, #1890FF 0%, #096DD9 100%);
-	padding: 60rpx 40rpx;
-	color: #fff;
+/* 沉浸式头部 */
+.profile-header {
+	position: relative;
+	height: 400rpx;
+	padding: 0 50rpx;
 	display: flex;
 	align-items: center;
 }
 
-.avatar-section {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	margin-right: 40rpx;
+.header-bg {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(135deg, #1890ff 0%, #36a3ff 100%);
+	border-bottom-right-radius: 80rpx;
+	z-index: 0;
 }
 
-.avatar {
-	width: 120rpx;
-	height: 120rpx;
-	border-radius: 50%;
-	border: 4rpx solid rgba(255, 255, 255, 0.5);
-	margin-bottom: 10rpx;
-}
-
-.change-avatar-tip {
-	font-size: 22rpx;
-	color: rgba(255, 255, 255, 0.8);
-}
-
-.user-info {
-	flex: 1;
-}
-
-.username {
-	display: block;
-	font-size: 36rpx;
-	font-weight: bold;
-	margin-bottom: 10rpx;
-}
-
-.role {
-	display: block;
-	font-size: 26rpx;
-	color: rgba(255, 255, 255, 0.8);
-}
-
-.info-section {
-	background: #fff;
-	margin: 20rpx;
-	border-radius: 20rpx;
-	padding: 30rpx;
-}
-
-.section-title {
-	font-size: 32rpx;
-	font-weight: bold;
-	color: #333;
-	margin-bottom: 30rpx;
-	padding-bottom: 20rpx;
-	border-bottom: 2rpx solid #eee;
-}
-
-.info-item {
+.user-main {
+	position: relative;
+	z-index: 1;
 	display: flex;
 	align-items: center;
-	padding: 20rpx 0;
-	border-bottom: 1rpx solid #f0f0f0;
-}
-
-.info-item:last-child {
-	border-bottom: none;
-}
-
-.label {
-	width: 150rpx;
-	font-size: 28rpx;
-	color: #666;
-}
-
-.value {
-	flex: 1;
-	font-size: 28rpx;
-	color: #333;
-}
-
-.value-input {
-	flex: 1;
-	font-size: 28rpx;
-	color: #333;
-}
-
-.action-buttons {
-	padding: 0 40rpx;
 	margin-top: 40rpx;
 }
 
-.save-btn, .change-password-btn, .logout-btn {
-	width: 100%;
-	height: 88rpx;
-	line-height: 88rpx;
-	border-radius: 10rpx;
-	font-size: 32rpx;
+.avatar-box {
+	position: relative;
+	margin-right: 32rpx;
+	.avatar-img {
+		width: 140rpx;
+		height: 140rpx;
+		border-radius: 70rpx;
+		border: 6rpx solid rgba(255,255,255,0.4);
+		box-shadow: 0 10rpx 30rpx rgba(0,0,0,0.1);
+	}
+	.camera-btn {
+		position: absolute;
+		right: 0;
+		bottom: 0;
+		width: 44rpx;
+		height: 44rpx;
+		background: #fff;
+		border-radius: 22rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 4rpx 10rpx rgba(0,0,0,0.1);
+		.iconfont { font-size: 24rpx; color: #1890ff; }
+	}
+}
+
+.user-text {
+	.user-name {
+		display: block;
+		font-size: 44rpx;
+		font-weight: bold;
+		color: #ffffff;
+		margin-bottom: 12rpx;
+	}
+	.role-tag {
+		display: inline-flex;
+		align-items: center;
+		background: rgba(255,255,255,0.2);
+		padding: 6rpx 20rpx;
+		border-radius: 20rpx;
+		font-size: 24rpx;
+		color: #fff;
+		gap: 8rpx;
+	}
+}
+
+.profile-content {
+	margin-top: -30rpx;
+	position: relative;
+	padding: 0 30rpx 100rpx;
+}
+
+/* 卡片样式 */
+.info-card {
+	background: #ffffff;
+	border-radius: 36rpx;
+	padding: 40rpx;
+	margin-bottom: 30rpx;
+	box-shadow: 0 8rpx 24rpx rgba(149, 157, 165, 0.05);
+	
+	.card-header {
+		display: flex;
+		align-items: center;
+		margin-bottom: 30rpx;
+		gap: 12rpx;
+		.iconfont { color: #1890ff; font-size: 32rpx; }
+		.title { font-size: 30rpx; font-weight: bold; color: #333; }
+	}
+	.balance-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 20rpx 0;
+		.balance-label { font-size: 28rpx; color: #64748b; }
+		.balance-value { font-size: 40rpx; font-weight: bold; color: #1890ff; }
+	}
+	.withdraw-btn {
+		margin-top: 20rpx;
+		height: 80rpx;
+		line-height: 80rpx;
+		background: linear-gradient(90deg, #1890ff, #40a9ff);
+		color: #fff;
+		border-radius: 40rpx;
+		font-size: 28rpx;
+		border: none;
+	}
+}
+
+.form-item {
+	display: flex;
+	align-items: center;
+	padding: 24rpx 0;
+	border-bottom: 1px solid #f1f5f9;
+	&.no-border { border-bottom: none; }
+
+	.label {
+		width: 160rpx;
+		font-size: 28rpx;
+		color: #64748b;
+	}
+	
+	.value-input, .static-value {
+		flex: 1;
+		font-size: 28rpx;
+		color: #1e293b;
+	}
+}
+
+/* 按钮样式 */
+.save-primary-btn {
+	margin-top: 30rpx;
+	height: 84rpx;
+	line-height: 84rpx;
+	background: linear-gradient(90deg, #1890ff, #40a9ff);
+	color: #fff;
+	border-radius: 42rpx;
+	font-size: 28rpx;
+	font-weight: bold;
 	border: none;
-	margin-bottom: 20rpx;
 }
 
-.save-btn {
-	background: #1890FF;
-	color: #fff;
+.ghost-btn-blue {
+	margin-top: 30rpx;
+	height: 84rpx;
+	line-height: 84rpx;
+	background: #ebf5ff;
+	color: #1890ff;
+	border-radius: 42rpx;
+	font-size: 28rpx;
+	font-weight: 500;
+	border: none;
 }
 
-.change-password-btn {
-	background: #52C41A;
-	color: #fff;
-}
-
-.logout-btn {
-	background: #FF4D4F;
-	color: #fff;
-}
-
-.save-btn[disabled], .change-password-btn[disabled] {
-	background: #ccc;
-}
-
-.menu-item {
+/* 菜单项 */
+.modern-menu-item {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	padding: 30rpx 0;
-	border-bottom: 1rpx solid #F0F0F0;
+	border-bottom: 1px solid #f1f5f9;
+	&:last-child { border-bottom: none; }
+
+	.menu-left {
+		display: flex;
+		align-items: center;
+		gap: 20rpx;
+		font-size: 28rpx;
+		color: #334155;
+	}
+	
+	.menu-icon {
+		width: 32rpx;
+		height: 32rpx;
+		background-size: contain;
+		background-repeat: no-repeat;
+		
+		&.type-icon { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%231890ff"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>'); }
+		&.schedule-icon { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%231890ff"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>'); }
+	}
+	
+	.arrow, .icon-arrow-right { font-size: 24rpx; color: #cbd5e1; }
 }
 
-.menu-item:last-child {
-	border-bottom: none;
+/* 退出部分 */
+.logout-section {
+	margin-top: 50rpx;
+	text-align: center;
 }
 
-.menu-label {
-	font-size: 28rpx;
-	color: #333;
+.logout-red-btn {
+	width: 80%;
+	height: 90rpx;
+	line-height: 90rpx;
+	background: #fff;
+	color: #ef4444;
+	border-radius: 45rpx;
+	font-size: 30rpx;
+	font-weight: bold;
+	border: 1px solid #fee2e2;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12rpx;
+	box-shadow: 0 4rpx 12rpx rgba(239, 68, 68, 0.05);
 }
 
-.menu-arrow {
-	font-size: 28rpx;
-	color: #999;
+.version-text {
+	display: block;
+	margin-top: 40rpx;
+	font-size: 22rpx;
+	color: #94a3b8;
 }
+
+/* 动画库 */
+@keyframes fadeIn {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+@keyframes slideUp {
+	from { opacity: 0; transform: translateY(30rpx); }
+	to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in { animation: fadeIn 0.8s ease; }
+.animate-slide-up { animation: slideUp 0.6s ease-out; }
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+
+.iconfont { font-size: 32rpx; }
 </style>

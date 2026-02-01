@@ -51,6 +51,24 @@
 			}
 		},
 		{
+			"path": "pages/profile/basic-info",
+			"style": {
+				"navigationBarTitleText": "基本资料"
+			}
+		},
+		{
+			"path": "pages/profile/security",
+			"style": {
+				"navigationBarTitleText": "安全设置"
+			}
+		},
+		{
+			"path": "pages/profile/withdraw",
+			"style": {
+				"navigationBarTitleText": "提现"
+			}
+		},
+		{
 			"path": "pages/worker/service-types",
 			"style": {
 				"navigationBarTitleText": "服务项目设置"
